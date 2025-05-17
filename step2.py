@@ -16,13 +16,12 @@ import requests
 from matplotlib.font_manager import FontProperties, fontManager
 import pandas as pd
 import kagglehub
-import shutil
 import datetime
 
 # 创建必要的目录
-for dir_name in ['img', 'csv', 'datasets']:
-    if not os.path.exists(dir_name):
-        os.makedirs(dir_name)
+required_dirs = ['img', 'csv', 'datasets', 'datasets/train_images', 'datasets/val_images']
+for dir_name in required_dirs:
+    os.makedirs(dir_name, exist_ok=True)
 
 # ===================== 1.数据集获取 =====================
 """
@@ -238,16 +237,6 @@ train_val_df = pd.DataFrame({
 })
 train_val_df.to_csv('csv/train_val_counts.csv', index=False, encoding='utf-8-sig')
 
-# 保存训练集和验证集
-print("正在保存训练集和验证集...")
-# 保存训练集
-train_dataset.save('datasets/train_dataset')
-print("训练集已保存到 datasets/train_dataset")
-
-# 保存验证集
-validation_dataset.save('datasets/validation_dataset')
-print("验证集已保存到 datasets/validation_dataset")
-
 # ===================== 7.绘制训练集和验证集图片数量对比图 =====================
 
 # 准备数据
@@ -259,37 +248,37 @@ validation_counts = list(validation_category_counts.values())
 plt.figure(figsize=(12, 8))
 
 # 设置柱状图的位置
-x = np.arange(len(categories))
-width = 0.35
+y = np.arange(len(categories))
+height = 0.35
 
-# 绘制柱状图
-train_bars = plt.bar(x - width/2, train_counts, width, label='训练集', color='#2E86C1', alpha=0.8)
-val_bars = plt.bar(x + width/2, validation_counts, width, label='验证集', color='#E74C3C', alpha=0.8)
+# 绘制横向柱状图
+train_bars = plt.barh(y - height/2, train_counts, height, label='训练集', color='#2E86C1', alpha=0.8)
+val_bars = plt.barh(y + height/2, validation_counts, height, label='验证集', color='#E74C3C', alpha=0.8)
 
 # 添加数值标签
 def add_labels(bars):
     for bar in bars:
-        height = bar.get_height()
-        plt.text(bar.get_x() + bar.get_width()/2., height,
-                f'{int(height)}',
-                ha='center', va='bottom', fontsize=8)
+        width = bar.get_width()
+        plt.text(width, bar.get_y() + bar.get_height()/2,
+                f'{int(width)}',
+                ha='left', va='center', fontsize=8, fontweight='bold')
 
 add_labels(train_bars)
 add_labels(val_bars)
 
 # 设置图表标题和轴标签
 plt.title('训练集和验证集图片数量对比', fontsize=14, pad=20)
-plt.xlabel('蘑菇种类', fontsize=12, labelpad=10)
-plt.ylabel('图片数量', fontsize=12, labelpad=10)
+plt.xlabel('图片数量', fontsize=12, labelpad=10)
+plt.ylabel('蘑菇种类', fontsize=12, labelpad=10)
 
-# 设置x轴刻度和标签
-plt.xticks(x, categories, rotation=45, ha='right', fontsize=10)
+# 设置y轴刻度和标签
+plt.yticks(y, categories, fontsize=10)
 
 # 添加图例
 plt.legend(fontsize=10)
 
 # 添加网格线
-plt.grid(axis='y', linestyle='--', alpha=0.3)
+plt.grid(axis='x', linestyle='--', alpha=0.3)
 
 # 设置背景样式
 plt.gca().set_facecolor('#f8f9fa')
@@ -308,7 +297,56 @@ plt.savefig('img/train_val_comparison.png',
 # 显示图形
 plt.show()
 
-# ===================== 8.显示数据集中的图像样本 =====================
+# ===================== 8.按类别保存图片 =====================
+"""
+将数据集中的图片按照类别保存到对应的文件夹中
+"""
+
+# 创建保存图片的目录
+train_img_dir = 'datasets/train_images'
+val_img_dir = 'datasets/val_images'
+
+# 确保目录存在
+os.makedirs(train_img_dir, exist_ok=True)
+os.makedirs(val_img_dir, exist_ok=True)
+
+# 初始化计数器
+train_counters = {category: 0 for category in class_names}
+val_counters = {category: 0 for category in class_names}
+
+# 保存训练集图片
+print("正在保存训练集图片...")
+for images, labels in train_dataset:
+    for image, label in zip(images, labels):
+        # 获取类别ID
+        category_id = class_names[np.argmax(label.numpy())]
+        # 创建类别目录
+        category_dir = os.path.join(train_img_dir, category_id)
+        os.makedirs(category_dir, exist_ok=True)
+        # 保存图片
+        img_path = os.path.join(category_dir, f'{train_counters[category_id]}.png')
+        tf.keras.preprocessing.image.save_img(img_path, image.numpy())
+        # 更新计数器
+        train_counters[category_id] += 1
+
+# 保存验证集图片
+print("正在保存验证集图片...")
+for images, labels in validation_dataset:
+    for image, label in zip(images, labels):
+        # 获取类别ID
+        category_id = class_names[np.argmax(label.numpy())]
+        # 创建类别目录
+        category_dir = os.path.join(val_img_dir, category_id)
+        os.makedirs(category_dir, exist_ok=True)
+        # 保存图片
+        img_path = os.path.join(category_dir, f'{val_counters[category_id]}.png')
+        tf.keras.preprocessing.image.save_img(img_path, image.numpy())
+        # 更新计数器
+        val_counters[category_id] += 1
+
+print("图片已按类别保存到datasets目录")
+
+# ===================== 9.显示数据集中的图像样本 =====================
 
 # 获取训练数据集中的类别名称
 class_names = train_dataset.class_names
@@ -352,21 +390,34 @@ plt.savefig('img/mushroom_samples.png', dpi=800, bbox_inches='tight')
 # 显示整个图形
 plt.show()
 
-# ===================== 9.压缩文件 =====================
+# ===================== 10.压缩文件 =====================
 """
-将生成的img、csv和datasets文件夹压缩成一个zip文件，方便后续使用和分享。
+将生成的img、csv和datasets文件夹分别压缩成zip文件，方便后续使用和分享。
 """
+
+# 复制label.txt到datasets文件夹
+if os.path.exists(label_path):
+    with open(label_path, 'r', encoding='utf-8') as src:
+        with open('datasets/label.txt', 'w', encoding='utf-8') as dst:
+            dst.write(src.read())
+    print('label.txt已复制到datasets文件夹')
+else:
+    print('警告：label.txt文件不存在')
 
 # 获取当前时间作为文件名的一部分
 current_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-zip_filename = f"step2_return_{current_time}.zip"
 
-# 创建压缩文件
-shutil.make_archive(
-    base_name=f"step2_return_{current_time}",  # 压缩文件名（不含扩展名）
-    format='zip',                             # 压缩格式
-    root_dir='.',                             # 要压缩的根目录
-    base_dir=['img', 'csv', 'datasets']       # 要包含的文件夹
-)
+# 定义要压缩的文件夹和对应的压缩文件名
+folders_to_zip = {
+    'img': f'step2_return_img_{current_time}.zip',
+    'csv': f'step2_return_csv_{current_time}.zip',
+    'datasets': f'step2_return_datasets_{current_time}.zip'
+}
 
-print(f"压缩文件已创建：{zip_filename}")
+# 压缩每个文件夹
+for folder, zip_name in folders_to_zip.items():
+    if os.path.exists(folder) and os.listdir(folder):  # 检查文件夹是否存在且不为空
+        os.system(f'zip -r {zip_name} {folder}')
+        print(f'压缩文件已创建：{zip_name}')
+    else:
+        print(f'警告：{folder}文件夹不存在或为空，跳过压缩')
