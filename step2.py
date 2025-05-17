@@ -25,6 +25,8 @@ for dir_name in required_dirs:
 
 # ===================== 1.数据集获取 =====================
 """
+# 1.数据集获取
+
 本项目使用的蘑菇图像数据集托管在 [Kaggle](https://www.kaggle.com/) 平台上，数据集名称为 [huizecai/mushroom](https://www.kaggle.com/datasets/huizecai/mushroom)。
 该数据集包含了多种常见蘑菇的高清图片，以及对应的分类标签。
 
@@ -48,6 +50,8 @@ label_path = path + '/archive/label.txt'  # 标签文件的路径
 
 # ===================== 2.数据集类别统计分析 =====================
 """
+# 2.数据集类别统计分析
+
 为了避免TensorFlow处理中文路径时可能出现的编码问题，本数据集采用了规范化的命名方式:
  - 各蘑菇种类的文件夹以"classXX"格式命名(XX为数字编号)
  - 使用label.txt文件建立文件夹编号与中文名称的映射关系
@@ -84,6 +88,8 @@ category_df.to_csv('csv/category_counts.csv', index=False, encoding='utf-8-sig')
 
 # ===================== 3.解决matplotlib中文显示问题 =====================
 """
+# 3.解决matplotlib中文显示问题
+
 matplotlib默认不支持中文字体显示,可能会出现乱码。为了确保数据可视化结果能正确展示中文:
 1. 我们将下载并使用"SimHei"(黑体)字体
 2. 注册字体到matplotlib的字体管理器
@@ -119,6 +125,11 @@ plt.rcParams['figure.dpi'] = 300
 plt.rcParams['savefig.dpi'] = 600
 
 # ===================== 4.绘制各种类图片数量的柱状图 =====================
+"""
+# 4.绘制各种类图片数量的柱状图
+
+绘制各种类图片数量的柱状图，以便直观了解数据集的分布情况。
+"""
 
 # 准备数据
 categories_readable = list(category_counts.keys())
@@ -180,6 +191,8 @@ plt.show()
 
 # ===================== 5.加载图像数据集 =====================
 """
+# 5.加载图像数据集
+
 使用 TensorFlow 的 image_dataset_from_directory 函数加载和准备图像数据集：
 - directory=dataset_path ：指定图像数据所在的路径
 - image_size=(224, 224) ：指定每个图像的大小为224x224像素
@@ -203,6 +216,8 @@ train_dataset, validation_dataset = tf.keras.preprocessing.image_dataset_from_di
 
 # ===================== 6.计算训练集和验证集中各类别图像的分布情况 =====================
 """
+# 6.计算训练集和验证集中各类别图像的分布情况
+
 统计训练集和验证集中每个蘑菇类别的图像数量，以便了解数据集的分布特征。
 """
 
@@ -238,6 +253,11 @@ train_val_df = pd.DataFrame({
 train_val_df.to_csv('csv/train_val_counts.csv', index=False, encoding='utf-8-sig')
 
 # ===================== 7.绘制训练集和验证集图片数量对比图 =====================
+"""
+# 7.绘制训练集和验证集图片数量对比图
+
+绘制训练集和验证集图片数量对比图，以便直观了解数据集的分布情况。
+"""
 
 # 准备数据
 categories = list(train_category_counts.keys())
@@ -297,9 +317,85 @@ plt.savefig('img/train_val_comparison.png',
 # 显示图形
 plt.show()
 
-# ===================== 8.按类别保存图片 =====================
+# ===================== 8.数据增强示例 =====================
 """
-将数据集中的图片按照类别保存到对应的文件夹中
+# 8.数据增强示例
+
+展示数据增强的效果，随机选择一张图片进行增强并显示结果
+"""
+
+# 定义数据增强的预处理层
+data_augmentation = tf.keras.Sequential([
+    tf.keras.layers.RandomFlip("horizontal"),  # 水平翻转
+    tf.keras.layers.RandomRotation(0.2),       # 随机旋转最多20%
+    tf.keras.layers.RandomZoom(0.2, 0.2),      # 随机缩放
+    tf.keras.layers.RandomContrast(0.2),       # 随机对比度调整
+    tf.keras.layers.RandomBrightness(0.2)      # 随机亮度调整
+])
+
+def demo_augmentation(sample_image, model, num_aug):
+    '''接收单个图像数组，然后使用模型生成num_aug个数据增强变换'''
+    # 初始化预览图像列表
+    image_preview = []
+
+    # 将输入图像转换为PIL图像实例
+    sample_image_pil = tf.keras.utils.array_to_img(sample_image)
+
+    # 将原始图像添加到列表中
+    image_preview.append(sample_image_pil)
+
+    # 应用图像增强并将结果添加到列表中
+    for i in range(num_aug):
+        # 扩展维度以适应模型输入
+        sample_image_aug = model(tf.expand_dims(sample_image, axis=0))
+        # 将增强后的图像转换为PIL格式
+        sample_image_aug_pil = tf.keras.utils.array_to_img(tf.squeeze(sample_image_aug))
+        image_preview.append(sample_image_aug_pil)
+
+    # 创建子图布局
+    fig, axes = plt.subplots(1, num_aug + 1, figsize=(15, 4))
+
+    # 显示所有图像
+    for index, ax in enumerate(axes):
+        ax.imshow(image_preview[index])
+        ax.set_axis_off()
+
+        # 设置图像标题
+        if index == 0:
+            ax.set_title('原始图像', fontsize=12)
+        else:
+            ax.set_title(f'增强样本 {index}', fontsize=12)
+
+    # 调整布局
+    plt.tight_layout()
+    
+    # 获取当前时间作为文件名的一部分
+    current_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    
+    # 保存图片
+    plt.savefig(f'img/data_augmentation_examples_{current_time}.png', dpi=300, bbox_inches='tight')
+    
+    # 显示图形
+    plt.show()
+
+# 从训练集中随机选择一张图片进行演示
+for images, labels in train_dataset.take(1):
+    # 选择第一张图片
+    image = images[0]
+    label = labels[0]
+    # 获取类别名称
+    category_id = class_names[np.argmax(label.numpy())]
+    category_name = categories[category_id]
+    
+    # 显示数据增强效果
+    print(f"正在展示 {category_name} 的数据增强效果...")
+    demo_augmentation(image, data_augmentation, num_aug=5)
+
+# ===================== 9.按类别保存图片 =====================
+"""
+# 9.按类别保存图片
+
+将数据集中的图片按照类别保存到对应的文件夹中，方便后续训练和验证。
 """
 
 # 创建保存图片的目录
@@ -314,7 +410,7 @@ os.makedirs(val_img_dir, exist_ok=True)
 train_counters = {category: 0 for category in class_names}
 val_counters = {category: 0 for category in class_names}
 
-# 保存训练集图片
+# 保存训练集图片（包含数据增强）
 print("正在保存训练集图片...")
 for images, labels in train_dataset:
     for image, label in zip(images, labels):
@@ -323,13 +419,19 @@ for images, labels in train_dataset:
         # 创建类别目录
         category_dir = os.path.join(train_img_dir, category_id)
         os.makedirs(category_dir, exist_ok=True)
-        # 保存图片
+        
+        # 保存原始图片
         img_path = os.path.join(category_dir, f'{train_counters[category_id]}.png')
         tf.keras.preprocessing.image.save_img(img_path, image.numpy())
-        # 更新计数器
+        train_counters[category_id] += 1
+        
+        # 保存增强后的图片
+        augmented_image = data_augmentation(image)
+        aug_img_path = os.path.join(category_dir, f'{train_counters[category_id]}_aug.png')
+        tf.keras.preprocessing.image.save_img(aug_img_path, augmented_image.numpy())
         train_counters[category_id] += 1
 
-# 保存验证集图片
+# 保存验证集图片（不进行数据增强）
 print("正在保存验证集图片...")
 for images, labels in validation_dataset:
     for image, label in zip(images, labels):
@@ -346,7 +448,12 @@ for images, labels in validation_dataset:
 
 print("图片已按类别保存到datasets目录")
 
-# ===================== 9.显示数据集中的图像样本 =====================
+# ===================== 10.显示数据集中的图像样本 =====================
+"""
+# 10.显示数据集中的图像样本
+
+显示数据集中的图像样本，以便直观了解数据集的分布情况。
+"""
 
 # 获取训练数据集中的类别名称
 class_names = train_dataset.class_names
@@ -390,8 +497,10 @@ plt.savefig('img/mushroom_samples.png', dpi=800, bbox_inches='tight')
 # 显示整个图形
 plt.show()
 
-# ===================== 10.压缩文件 =====================
+# ===================== 11.压缩文件 =====================
 """
+# 11.压缩文件
+
 将生成的img、csv和datasets文件夹分别压缩成zip文件，方便后续使用和分享。
 """
 
