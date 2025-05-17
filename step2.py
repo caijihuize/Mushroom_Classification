@@ -337,8 +337,10 @@ fig, axes = plt.subplots(1, num_images_to_show, figsize=(6.4, 4))
 for i, (image, label) in enumerate(zip(images_to_display, labels_to_display)):
     ax = axes[i]
     ax.imshow(image.numpy().astype("uint8"))
-    ax.set_title(categories[class_names[np.argmax(label.numpy())]],
-                fontsize=12)
+    # 获取类别ID并转换为中文名称
+    category_id = class_names[np.argmax(label.numpy())]
+    category_name = categories[category_id]
+    ax.set_title(category_name, fontsize=12)
     ax.axis("off")
 
 # 自动调整子图之间的间距
