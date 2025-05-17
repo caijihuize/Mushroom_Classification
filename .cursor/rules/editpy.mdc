@@ -1,0 +1,6 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+可以修改py文件，要求保持说明文本（注释）+代码的形式。
