@@ -23,34 +23,19 @@
 ```
 Mushroom_Classification/
 │
-├── data/                      # 图像数据集目录（按分类整理）
-│   ├── class0/               # 羊肚菌图像
-│   ├── class1/               # 牛肝菌图像
-│   └── ...                   # 其他分类
+├── step1_creat_dataset.ipynb   # 数据集创建脚本
+├── step2_prepare_dataset.ipynb # 数据预处理脚本
+├── step3_train_model.ipynb     # 模型训练脚本
+├── step4_csv_analyse.ipynb     # 数据分析脚本
 │
-├── images/                    # 蘑菇类型示例图像
-│   ├── 羊肚菌/                # 羊肚菌示例图像
-│   ├── 牛肝菌/                # 牛肝菌示例图像
-│   └── ...                   # 其他蘑菇类型
+├── csv/                        # 数据分析和结果存储目录
+├── img/                        # 图像数据目录
 │
-├── step1_data.py              # 数据收集与处理脚本
-├── step2_dataClean.ipynb      # 数据预处理和模型训练脚本
-├── label.txt                  # 分类标签映射文件
-├── mushrooms.json             # 蘑菇描述信息JSON文件
-├── SimHei.ttf                 # 中文字体文件（用于可视化）
-├── requirements.txt           # 项目依赖文件
-└── README.md                  # 项目说明文档
+├── mushrooms.json              # 蘑菇描述信息JSON文件
+├── SimHei.ttf                  # 中文字体文件（用于可视化）
+├── requirements.txt            # 项目依赖文件
+└── README.md                   # 项目说明文档
 ```
-
-## 蘑菇数据
-
-`mushrooms.json`文件中包含了36种常见食用菌的详细信息，包括：
-- **Name**: 蘑菇中文名称
-- **Description**: 详细描述，包括学名、形态特征、生长环境和分布区域
-- **Feature**: 主要外观特征和识别要点
-- **ImageUrls**: 示例图片路径，存储于`images`目录中
-
-这些详细信息可以帮助研究人员和爱好者更全面地了解各种蘑菇的特点，同时也为深度学习模型提供了丰富的标签信息。
 
 ## 技术实现
 
@@ -58,41 +43,57 @@ Mushroom_Classification/
 - 使用Selenium和BeautifulSoup从百度图片搜索下载图像
 - 抓取百度百科对应蘑菇种类的描述信息
 - 对图像进行标准化处理和存储
-
-### 2. 模型训练
-- 基础框架：TensorFlow
 - 数据增强：随机翻转、旋转、缩放等操作
-- 模型架构：采用迁移学习，对比了多种预训练模型的性能
+
+### 2. 模型架构
+项目对比了多种深度学习模型架构：
+- MobileNet系列
   - MobileNet
   - MobileNetV2
   - MobileNetV3Small
+- EfficientNet系列
   - EfficientNetB0
   - EfficientNetV2S
+- ResNet系列
   - ResNet101
 
-### 3. 评估指标
+### 3. 训练策略
+- 使用迁移学习方法
+- 采用预训练模型进行微调
+- 使用数据增强提高模型泛化能力
+- 实现模型压缩和优化
+
+### 4. 评估指标
 - 准确率（Accuracy）
 - 精确率（Precision）
 - 召回率（Recall）
 - F1分数
+- 混淆矩阵分析
 
-## 使用说明
+## 环境配置
 
-### 环境配置
+### 系统要求
+- Python 3.8+
+- CUDA支持（推荐用于GPU加速）
+
+### 安装依赖
 ```bash
 pip install -r requirements.txt
 ```
 
-### 数据集准备
-如果要从头开始收集数据，运行：
-```bash
-python step1_data.py
-```
+## 使用说明
 
-### 模型训练与评估
-```bash
-jupyter notebook step2_dataClean.ipynb
-```
+1. 数据准备
+   - 运行 `step1_creat_dataset.ipynb` 创建数据集
+   - 运行 `step2_prepare_dataset.ipynb` 进行数据预处理
+
+2. 模型训练
+   - 运行 `step3_train_model.ipynb` 开始模型训练
+   - 可选择不同的模型架构和训练参数
+
+3. 结果分析
+   - 运行 `step4_csv_analyse.ipynb` 进行结果分析
+   - 查看模型性能指标和可视化结果
 
 ## 应用场景
 
@@ -106,10 +107,12 @@ jupyter notebook step2_dataClean.ipynb
 ## 未来改进
 
 - 扩充数据集，增加更多种类的蘑菇
-- 改进模型架构，提高识别准确率，特别是相似种类的区分
+- 改进模型架构，提高识别准确率
 - 开发移动应用，实现现场识别功能
 - 添加毒蘑菇警告标识，提高安全性
-- 建立更完善的蘑菇知识库，包括营养成分和食用方法
+- 建立更完善的蘑菇知识库
+- 优化模型部署，提高推理速度
+- 增加多模态特征融合
 
 ## 参考资料
 
